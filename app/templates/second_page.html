@@ -8,9 +8,165 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* Estilo general */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f9fafc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Botón de regreso */
+        .back-button {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-button:active {
+            transform: scale(1);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+
+        /* Map Section */
+        .map-section {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #map {
+            height: 70vh;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap; /* Asegura que se ajuste en pantallas pequeñas */
+        }
+
+        .filters input, .filters button {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .filters button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .filters button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .filters button:active {
+            transform: scale(1);
+        }
+
+        /* Recommendations */
+        .recommendations {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .recommendations h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .recommendations p {
+            color: #555;
+            font-size: 1rem;
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Transiciones y estilos mejorados */
+        button, input {
+            transition: all 0.3s ease;
+        }
+
+        button:focus, input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+    </style>
 </head>
 <body>
     <header>
+        <a href="/" class="back-button">Volver a Home</a>
         <h1>Mapa de Noticias - Gestión Agrícola</h1>
     </header>
     <main>
@@ -60,15 +216,15 @@
                     icon: createCustomIcon(color),
                 }).addTo(map);
                 marker.bindPopup(`
-                    <strong>${news.title || 'Sin título'}</strong><br>
+                    <strong>${sanitizeText(news.title) || 'Sin título'}</strong><br>
                     <a href="${news.url || '#'}" target="_blank" rel="noopener noreferrer">
                         ${news.url ? 'Ver noticia' : 'No disponible'}
                     </a><br>
-                    <p>Categoría: ${news.category || 'No clasificado'}</p>
+                    <p>Categoría: ${sanitizeText(news.category) || 'No clasificado'}</p>
                     <button onclick="fetchRecommendations(
-                        '${news.title || 'Sin título'}', 
-                        '${news.category || 'Sin categoría'}', 
-                        '${news.publish_date || 'Fecha no disponible'}', 
+                        '${sanitizeText(news.title) || 'Sin título'}', 
+                        '${sanitizeText(news.category) || 'Sin categoría'}', 
+                        '${news.publish_date || 'Fecha no disponible'}'
                     )">
                         Ver detalles
                     </button>
@@ -95,6 +251,12 @@
             });
         }
 
+        // Función para sanitizar texto
+        function sanitizeText(text) {
+            if (!text) return ''; // Si no hay texto, devolver vacío
+            return text.replace(/\n/g, ' ').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
         // Función para obtener datos de la API
         async function fetchData() {
             try {
@@ -105,14 +267,9 @@
                 console.error('Error al cargar los datos:', error);
             }
         }
-        // Nueva función para sanitizar texto
-        function sanitizeText(text) {
-            if (!text) return ''; // Si no hay texto, devolver vacío
-            return text.replace(/\n/g, ' ').replace(/'/g, "\\'").replace(/"/g, '\\"');
-        }
-        
+
         // Función para obtener recomendaciones
-        async function fetchRecommendations(title, category, publish_date, insight, text) {
+        async function fetchRecommendations(title, category, publish_date) {
             try {
                 const response = await axios.post('/api/news-recommendations', {
                     title: sanitizeText(title),
@@ -125,8 +282,7 @@
                 console.error('Error:', error);
             }
         }
-        
-        
+
         // Función para aplicar filtros
         document.getElementById('applyFilters').addEventListener('click', () => {
             const authorFilter = document.getElementById('authorFilter').value.toLowerCase();
@@ -134,7 +290,7 @@
             const sourceFilter = document.getElementById('sourceFilter').value.toLowerCase();
             const fromDate = new Date(document.getElementById('fromDate').value).getTime();
             const toDate = new Date(document.getElementById('toDate').value).getTime();
-        
+
             const filtered = newsData.filter(news => {
                 const publishDate = new Date(news.publish_date || '').getTime();
                 return (
@@ -147,7 +303,6 @@
             });
             updateMap(filtered);
         });
-        
 
         fetchData();
     </script>

@@ -8,13 +8,42 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* Botón de regreso */
+        .back-button {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-button:active {
+            transform: scale(1);
+        }
+    </style>
 </head>
 <body>
     <header>
+        <a href="/" class="back-button">Volver a Home</a>
         <h1>Mapa de Plagas - Gestión Agrícola</h1>
     </header>
     <main>
         <div class="content">
+            <!-- Contenedor del mapa y filtros -->
             <div class="map-section">
                 <h2>Mapa de Plagas</h2>
                 <div class="filters">
@@ -26,6 +55,8 @@
                 </div>
                 <div id="map"></div>
             </div>
+
+            <!-- Contenedor de recomendaciones -->
             <div class="recommendations">
                 <h2>Recomendaciones</h2>
                 <p id="recommendationsContent">Selecciona una plaga para obtener recomendaciones específicas.</p>
@@ -56,11 +87,11 @@
                     icon: createCustomIcon(color),
                 }).addTo(map);
                 marker.bindPopup(`
-                    <strong>Plaga: ${pest.pest}</strong><br>
-                    <p>Descripción: ${pest.description}</p>
-                    <p>Fecha de reporte: ${pest.date}</p>
-                    <p>Región: ${pest.region}</p>
-                    <button onclick="fetchRecommendations('${pest.pest}', '${pest.region}', '${pest.date}')">
+                    <strong>Plaga: ${sanitizeText(pest.pest) || 'No especificada'}</strong><br>
+                    <p>Descripción: ${sanitizeText(pest.description)}</p>
+                    <p>Fecha de reporte: ${pest.date || 'Fecha no disponible'}</p>
+                    <p>Región: ${sanitizeText(pest.region)}</p>
+                    <button onclick="fetchRecommendations('${sanitizeText(pest.pest)}', '${sanitizeText(pest.region)}', '${pest.date || ''}')">
                         ¿Qué hacer?
                     </button>
                 `);
@@ -84,6 +115,12 @@
             });
         }
 
+        // Función para sanitizar texto
+        function sanitizeText(text) {
+            if (!text) return ''; // Si no hay texto, devolver vacío
+            return text.replace(/\n/g, ' ').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
         // Función para obtener datos de plagas
         async function fetchData() {
             try {
@@ -99,8 +136,8 @@
         async function fetchRecommendations(pest, region, date) {
             try {
                 const response = await axios.post('/api/pests-recommendations', {
-                    pest,
-                    region,
+                    pest: sanitizeText(pest),
+                    region: sanitizeText(region),
                     date,
                 });
                 recommendationsElement.textContent = response.data.recommendations || 'No se encontraron recomendaciones.';
@@ -118,7 +155,7 @@
             const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
 
             const filtered = pestsData.filter(pest => {
-                const pestDate = new Date(pest.date).getTime();
+                const pestDate = new Date(pest.date || '').getTime();
                 return (
                     (!regionFilter || pest.region.toLowerCase().includes(regionFilter)) &&
                     (isNaN(fromDate) || pestDate >= fromDate) &&
