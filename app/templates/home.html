@@ -5,20 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio - Gestión Climática</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Estilo general */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f9fafc; /* Fondo limpio */
+            color: #333;
+        }
+
+        header {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .home-options {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 15px 25px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: transform 0.2s, background-color 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .button:active {
+            transform: scale(1);
+        }
+
+        footer {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            position: absolute;
+            bottom: 0;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Animación de entrada */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .home-options a {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Marca Kuray */
+        .kuray-brand {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #555;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
     <header>
         <h1>Bienvenido a la Gestión Climática</h1>
     </header>
     <main>
+        <p class="kuray-brand">Kuray - Innovación Agrícola</p>
         <div class="home-options">
             <a href="/climate-map" class="button">Ir al Mapa Climático</a>
-            <a href="/second-map" class="button">Ir al Mapa Alternativo</a>
+            <a href="/second-map" class="button">Ir al Mapa de Noticias</a>
             <a href="/third-map" class="button">Ir al Mapa Plagas</a>
         </div>
     </main>
     <footer>
-        <p>© 2024 Gestión Agrícola. Todos los derechos reservados.</p>
+        <p>© 2024 Kuray. Todos los derechos reservados.</p>
     </footer>
 </body>
 </html>

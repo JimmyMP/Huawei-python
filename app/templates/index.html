@@ -8,9 +8,165 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* Estilo general */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f9fafc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Botón de regreso */
+        .back-button {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-button:active {
+            transform: scale(1);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+
+        /* Map Section */
+        .map-section {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #map {
+            height: 70vh;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap; /* Asegura que se ajuste en pantallas pequeñas */
+        }
+
+        .filters input, .filters button {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .filters button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .filters button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .filters button:active {
+            transform: scale(1);
+        }
+
+        /* Recommendations */
+        .recommendations {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .recommendations h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .recommendations p {
+            color: #555;
+            font-size: 1rem;
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Transiciones y estilos mejorados */
+        button, input {
+            transition: all 0.3s ease;
+        }
+
+        button:focus, input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+    </style>
 </head>
 <body>
     <header>
+        <a href="/" class="back-button">Volver a Home</a>
         <h1>Mapa de Clima - Gestión Agrícola</h1>
     </header>
     <main>
@@ -40,7 +196,7 @@
         <p>© 2024 Gestión Agrícola. Todos los derechos reservados.</p>
     </footer>
     <script>
-        // JS Code (Mantiene lo que ya configuramos)
+        // Código JS permanece igual
         const map = L.map('map').setView([-11.5, -75], 6);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
