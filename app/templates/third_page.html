@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Plagas</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Mapa de Plagas - Gestión Agrícola</h1>
+    </header>
+    <main>
+        <div class="content">
+            <div class="map-section">
+                <h2>Mapa de Plagas</h2>
+                <div class="filters">
+                    <input id="regionFilter" type="text" placeholder="Buscar por región">
+                    <input id="fromDate" type="date" placeholder="Desde">
+                    <input id="toDate" type="date" placeholder="Hasta">
+                    <input id="searchFilter" type="text" placeholder="Buscar plaga">
+                    <button id="applyFilters">Aplicar Filtros</button>
+                </div>
+                <div id="map"></div>
+            </div>
+            <div class="recommendations">
+                <h2>Recomendaciones</h2>
+                <p id="recommendationsContent">Selecciona una plaga para obtener recomendaciones específicas.</p>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>© 2024 Gestión Agrícola. Todos los derechos reservados.</p>
+    </footer>
+    <script>
+        const map = L.map('map').setView([-11.5, -75], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        let pestsData = [];
+        const recommendationsElement = document.getElementById('recommendationsContent');
+        let markers = [];
+
+        // Función para limpiar y actualizar los marcadores en el mapa
+        function updateMap(data) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            data.forEach(pest => {
+                const color = generateColor(pest.pest);
+                const marker = L.marker([pest.lat, pest.lon], {
+                    icon: createCustomIcon(color),
+                }).addTo(map);
+                marker.bindPopup(`
+                    <strong>Plaga: ${pest.pest}</strong><br>
+                    <p>Descripción: ${pest.description}</p>
+                    <p>Fecha de reporte: ${pest.date}</p>
+                    <p>Región: ${pest.region}</p>
+                    <button onclick="fetchRecommendations('${pest.pest}', '${pest.region}', '${pest.date}')">
+                        ¿Qué hacer?
+                    </button>
+                `);
+                markers.push(marker);
+            });
+        }
+
+        // Función para generar colores dinámicos
+        function generateColor(pestType) {
+            const hash = pestType.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hue = hash % 360;
+            return `hsl(${hue}, 70%, 50%)`;
+        }
+
+        // Crear íconos personalizados
+        function createCustomIcon(color) {
+            return L.divIcon({
+                className: 'custom-icon',
+                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%;"></div>`,
+                iconSize: [20, 20],
+            });
+        }
+
+        // Función para obtener datos de plagas
+        async function fetchData() {
+            try {
+                const response = await axios.get('/api/pests');
+                pestsData = response.data.pests;
+                updateMap(pestsData);
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+            }
+        }
+
+        // Función para obtener recomendaciones
+        async function fetchRecommendations(pest, region, date) {
+            try {
+                const response = await axios.post('/api/pests-recommendations', {
+                    pest,
+                    region,
+                    date,
+                });
+                recommendationsElement.textContent = response.data.recommendations || 'No se encontraron recomendaciones.';
+            } catch (error) {
+                recommendationsElement.textContent = 'Error al obtener recomendaciones.';
+                console.error('Error:', error);
+            }
+        }
+
+        // Función para aplicar filtros
+        document.getElementById('applyFilters').addEventListener('click', () => {
+            const regionFilter = document.getElementById('regionFilter').value.toLowerCase();
+            const fromDate = new Date(document.getElementById('fromDate').value).getTime();
+            const toDate = new Date(document.getElementById('toDate').value).getTime();
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+
+            const filtered = pestsData.filter(pest => {
+                const pestDate = new Date(pest.date).getTime();
+                return (
+                    (!regionFilter || pest.region.toLowerCase().includes(regionFilter)) &&
+                    (isNaN(fromDate) || pestDate >= fromDate) &&
+                    (isNaN(toDate) || pestDate <= toDate) &&
+                    (!searchFilter || pest.pest.toLowerCase().includes(searchFilter))
+                );
+            });
+            updateMap(filtered);
+        });
+
+        fetchData();
+    </script>
+</body>
+</html>

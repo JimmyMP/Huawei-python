@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Climático</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Mapa de Clima - Gestión Agrícola</h1>
+    </header>
+    <main>
+        <div class="content">
+            <!-- Contenedor del mapa y filtros -->
+            <div class="map-section">
+                <h2>Mapa Climático</h2>
+                <div class="filters">
+                    <input id="cityFilter" type="text" placeholder="Buscar por ciudad">
+                    <input id="tempMaxFilter" type="number" placeholder="Temperatura máxima (°C)">
+                    <input id="tempMinFilter" type="number" placeholder="Temperatura mínima (°C)">
+                    <input id="precipMinFilter" type="number" placeholder="Precipitación mínima (mm)">
+                    <input id="precipMaxFilter" type="number" placeholder="Precipitación máxima (mm)">
+                    <button id="applyFilters">Aplicar Filtros</button>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <!-- Contenedor de recomendaciones -->
+            <div class="recommendations">
+                <h2>Recomendaciones</h2>
+                <p id="recommendationsContent">Selecciona una ciudad para obtener recomendaciones específicas.</p>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>© 2024 Gestión Agrícola. Todos los derechos reservados.</p>
+    </footer>
+    <script>
+        // JS Code (Mantiene lo que ya configuramos)
+        const map = L.map('map').setView([-11.5, -75], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        let climateData = [];
+        const recommendationsElement = document.getElementById('recommendationsContent');
+
+        async function fetchData() {
+            try {
+                const response = await axios.get('/api/climate');
+                climateData = response.data.climate;
+                updateMap(climateData);
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+            }
+        }
+
+        let markers = [];
+        function updateMap(data) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            data.forEach(point => {
+                const marker = L.marker([point.lat, point.lon]).addTo(map);
+                marker.bindPopup(`
+                    <strong>${point.city}</strong><br>
+                    ${point.description}<br>
+                    <button onclick="fetchRecommendations(
+                        '${point.city}', 
+                        '${point.maxt}', 
+                        '${point.mint}', 
+                        '${point.precipitation}', 
+                        '${point.description}'
+                    )">Ver recomendaciones</button>
+                `);
+                markers.push(marker);
+            });
+        }
+
+        async function fetchRecommendations(city, maxt, mint, precipitation, description) {
+            try {
+                const response = await axios.post('/api/recommendations', { 
+                    city, 
+                    maxt, 
+                    mint, 
+                    precipitation, 
+                    description 
+                });
+                recommendationsElement.textContent = response.data.recommendations;
+            } catch (error) {
+                recommendationsElement.textContent = 'Error al obtener recomendaciones.';
+            }
+        }
+
+        document.getElementById('applyFilters').addEventListener('click', async () => {
+            const filters = {
+                city: document.getElementById('cityFilter').value,
+                tempMax: document.getElementById('tempMaxFilter').value,
+                tempMin: document.getElementById('tempMinFilter').value,
+                precipMin: document.getElementById('precipMinFilter').value,
+                precipMax: document.getElementById('precipMaxFilter').value,
+            };
+
+            try {
+                const response = await axios.post('/api/filter', filters);
+                updateMap(response.data);
+            } catch (error) {
+                console.error('Error al aplicar filtros:', error);
+            }
+        });
+
+        fetchData();
+    </script>
+</body>
+</html>

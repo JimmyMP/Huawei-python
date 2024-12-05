@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Noticias</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Mapa de Noticias - Gestión Agrícola</h1>
+    </header>
+    <main>
+        <div class="content">
+            <!-- Contenedor del mapa y filtros -->
+            <div class="map-section">
+                <h2>Mapa de Noticias</h2>
+                <div class="filters">
+                    <input id="authorFilter" type="text" placeholder="Buscar por autor">
+                    <input id="categoryFilter" type="text" placeholder="Buscar por categoría">
+                    <input id="sourceFilter" type="text" placeholder="Buscar por fuente">
+                    <input id="fromDate" type="date" placeholder="Desde">
+                    <input id="toDate" type="date" placeholder="Hasta">
+                    <button id="applyFilters">Aplicar Filtros</button>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <!-- Contenedor de recomendaciones -->
+            <div class="recommendations">
+                <h2>Recomendaciones</h2>
+                <p id="recommendationsContent">Selecciona una noticia para obtener recomendaciones específicas.</p>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>© 2024 Gestión Agrícola. Todos los derechos reservados.</p>
+    </footer>
+    <script>
+        const map = L.map('map').setView([-34.5, -64.9], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        let newsData = [];
+        const recommendationsElement = document.getElementById('recommendationsContent');
+        let markers = [];
+
+        // Función para limpiar y actualizar los marcadores en el mapa
+        function updateMap(data) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            data.forEach(news => {
+                const color = generateColor(news.category);
+                const marker = L.marker([news.lat, news.lon], {
+                    icon: createCustomIcon(color),
+                }).addTo(map);
+                marker.bindPopup(`
+                    <strong>${news.title || 'Sin título'}</strong><br>
+                    <a href="${news.url || '#'}" target="_blank" rel="noopener noreferrer">
+                        ${news.url ? 'Ver noticia' : 'No disponible'}
+                    </a><br>
+                    <p>Categoría: ${news.category || 'No clasificado'}</p>
+                    <button onclick="fetchRecommendations(
+                        '${news.title || 'Sin título'}', 
+                        '${news.category || 'Sin categoría'}', 
+                        '${news.publish_date || 'Fecha no disponible'}', 
+                    )">
+                        Ver detalles
+                    </button>
+                `);
+
+                markers.push(marker);
+            });
+        }
+
+        // Función para generar un color basado en la categoría
+        function generateColor(category) {
+            if (!category) return '#000000';
+            const hash = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hue = hash % 360;
+            return `hsl(${hue}, 70%, 50%)`;
+        }
+
+        // Crear un ícono personalizado
+        function createCustomIcon(color) {
+            return L.divIcon({
+                className: 'custom-icon',
+                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%;"></div>`,
+                iconSize: [20, 20],
+            });
+        }
+
+        // Función para obtener datos de la API
+        async function fetchData() {
+            try {
+                const response = await axios.get('/api/news');
+                newsData = response.data.news;
+                updateMap(newsData);
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+            }
+        }
+        // Nueva función para sanitizar texto
+        function sanitizeText(text) {
+            if (!text) return ''; // Si no hay texto, devolver vacío
+            return text.replace(/\n/g, ' ').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+        
+        // Función para obtener recomendaciones
+        async function fetchRecommendations(title, category, publish_date, insight, text) {
+            try {
+                const response = await axios.post('/api/news-recommendations', {
+                    title: sanitizeText(title),
+                    category: sanitizeText(category),
+                    publish_date,
+                });
+                recommendationsElement.textContent = response.data.recommendations || 'No se encontraron recomendaciones.';
+            } catch (error) {
+                recommendationsElement.textContent = 'Error al obtener recomendaciones.';
+                console.error('Error:', error);
+            }
+        }
+        
+        
+        // Función para aplicar filtros
+        document.getElementById('applyFilters').addEventListener('click', () => {
+            const authorFilter = document.getElementById('authorFilter').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+            const sourceFilter = document.getElementById('sourceFilter').value.toLowerCase();
+            const fromDate = new Date(document.getElementById('fromDate').value).getTime();
+            const toDate = new Date(document.getElementById('toDate').value).getTime();
+        
+            const filtered = newsData.filter(news => {
+                const publishDate = new Date(news.publish_date || '').getTime();
+                return (
+                    (!authorFilter || (news.author && news.author.toLowerCase().includes(authorFilter))) &&
+                    (!categoryFilter || (news.category && news.category.toLowerCase().includes(categoryFilter))) &&
+                    (!sourceFilter || (news.source_country && news.source_country.toLowerCase().includes(sourceFilter))) &&
+                    (isNaN(fromDate) || publishDate >= fromDate) &&
+                    (isNaN(toDate) || publishDate <= toDate)
+                );
+            });
+            updateMap(filtered);
+        });
+        
+
+        fetchData();
+    </script>
+</body>
+</html>
